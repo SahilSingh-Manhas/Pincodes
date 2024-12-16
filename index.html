@@ -82,12 +82,13 @@
     <button onclick="clearEditor()">Clear</button> <!-- Added Clear button -->
     <button onclick="runCode()">Run Code</button> <!-- Added Run button -->
     <select id="fileExtension" onchange="updateExtension()">
-      <option value=".html">.html</option>
-      <option value=".css">.css</option>
-      <option value=".js">.js</option>
-      <option value=".py">.py</option>
-      <option value=".php">.php</option>
-      <option value=".txt">.txt</option> <!-- Added .txt option -->
+      <option value=".html">html</option>
+      <option value=".css">css</option>
+      <option value=".js">js</option>
+      <option value=".py">py</option>
+      <option value=".php">php</option>
+      <option value=".txt">txt</option>
+      <option value=".lrc">lrc</option> <!-- Added .txt option -->
     </select>
     <input type="file" accept=".html,.css,.js,.py,.php,.txt" onchange="uploadFile(event)" />
   </div>
