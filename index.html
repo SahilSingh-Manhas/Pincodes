@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTML Editor</title>
+  <title>Text Editor</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -89,7 +89,7 @@
   </style>
 </head>
 <body>
-  <header>HTML Editor</header>
+  <header>Text Editor</header>
   <textarea id="editor" placeholder="Write or edit your HTML code here..." oninput="showSuggestions(event)"></textarea>
   
   <div class="button-container">
@@ -234,13 +234,16 @@
       const cursorPosition = editor.selectionStart;
       const textBeforeCursor = editor.value.slice(0, cursorPosition);
 
-      // Detect if the user is typing a tag name (e.g., <td)
+      // Detect if the user is typing a tag name (e.g., <html)
       const match = textBeforeCursor.match(/<([a-z]*)$/i);
       if (match) {
         const partialTag = match[1].toLowerCase();
         const suggestions = htmlTags.filter(tag => tag.startsWith(partialTag));
 
-        if (suggestions.length > 0) {
+        if (partialTag === 'html') {
+          // Suggest the full HTML structure when typing 'html'
+          displayHtmlTemplate();
+        } else if (suggestions.length > 0) {
           displaySuggestions(suggestions);
         } else {
           hideSuggestions();
@@ -263,6 +266,27 @@
       suggestionList.style.display = 'block';
     }
 
+    function displayHtmlTemplate() {
+      const suggestionList = document.getElementById('suggestions');
+      suggestionList.innerHTML = '';
+      const htmlTemplate = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>Page Title</title>
+  </head>
+  <body>
+    body
+  </body>
+</html>`;
+      const item = document.createElement('div');
+      item.classList.add('suggestion-item');
+      item.textContent = htmlTemplate; // Full HTML structure suggestion
+      item.onclick = () => insertHtmlTemplate();
+      suggestionList.appendChild(item);
+      suggestionList.style.display = 'block';
+    }
+
     function insertTag(tag) {
       const editor = document.getElementById('editor');
       const cursorPosition = editor.selectionStart;
@@ -274,6 +298,31 @@
 
       // Move cursor inside the tag
       editor.selectionStart = editor.selectionEnd = textBeforeCursor.length + tag.length + 2; // After <tag>
+      hideSuggestions();
+    }
+
+    function insertHtmlTemplate() {
+      const editor = document.getElementById('editor');
+      const cursorPosition = editor.selectionStart;
+      const textBeforeCursor = editor.value.slice(0, cursorPosition);
+
+      // Insert the full HTML template
+      const htmlTemplate = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>Page Title</title>
+  </head>
+  <body>
+    body
+  </body>
+</html>`;
+
+      const newText = textBeforeCursor + htmlTemplate + editor.value.slice(cursorPosition);
+      editor.value = newText;
+
+      // Move cursor after the body tag
+      editor.selectionStart = editor.selectionEnd = textBeforeCursor.length + htmlTemplate.length - 7; // Before </body>
       hideSuggestions();
     }
 
