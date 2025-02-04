@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTML File Editor</title>
+  <title>HTML Editor</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -34,6 +34,7 @@
       padding: 10px;
       resize: none;
       white-space: pre-wrap;
+      position: relative;
     }
 
     .button-container {
@@ -63,11 +64,33 @@
     select, input[type="text"] {
       background: #f1f1f1;
     }
+
+    .suggestion-list {
+      position: absolute;
+      top: 40px;
+      left: 10%;
+      right: 10%;
+      background-color: white;
+      border: 1px solid #ccc;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 100;
+    }
+
+    .suggestion-item {
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .suggestion-item:hover {
+      background-color: #f1f1f1;
+    }
   </style>
 </head>
 <body>
-  <header>HTML File Editor</header>
-  <textarea id="editor" placeholder="Write or edit your code here..."></textarea>
+  <header>HTML Editor</header>
+  <textarea id="editor" placeholder="Write or edit your HTML code here..." oninput="showSuggestions(event)"></textarea>
   
   <div class="button-container">
     <button onclick="copyCode()">Copy Code</button>
@@ -83,7 +106,7 @@
       <option value=".py">.py</option>
       <option value=".php">.php</option>
       <option value=".txt">.txt</option>
-      <option value=".lrc">.lrc</option> <!-- Added LRC option -->
+      <option value=".lrc">.lrc</option>
     </select>
     <input type="file" accept=".html,.css,.js,.py,.php,.txt,.lrc" onchange="uploadFile(event)" />
   </div>
@@ -93,9 +116,17 @@
     <button onclick="downloadSourceCode()">Download File by Link</button>
   </div>
 
+  <div id="suggestions" class="suggestion-list"></div> <!-- Suggestions dropdown -->
+
   <script>
     let fileName = 'new_file';
     let fileExtension = '.html';
+
+    const htmlTags = [
+      'html', 'head', 'body', 'title', 'h1', 'h2', 'h3', 'p', 'a', 'div', 'span', 
+      'ul', 'li', 'img', 'form', 'input', 'button', 'link', 'script', 'meta', 'style', 
+      'td', 'tr', 'table', 'th', 'thead', 'tfoot', 'tbody', 'col', 'colgroup'
+    ];
 
     function copyCode() {
       const editor = document.getElementById('editor');
@@ -125,7 +156,7 @@
       const blob = new Blob([editorContent], { type: 'text/plain' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `${fileName}${fileExtension}`; // Fixed PHP file extension issue
+      link.download = `${fileName}${fileExtension}`;
       link.click();
     }
 
@@ -146,6 +177,7 @@
 
     function clearEditor() {
       document.getElementById('editor').value = '';
+      hideSuggestions();
     }
 
     function runCode() {
@@ -195,6 +227,59 @@
         .catch((error) => {
           alert(`Failed to download file: ${error.message}`);
         });
+    }
+
+    function showSuggestions(event) {
+      const editor = document.getElementById('editor');
+      const cursorPosition = editor.selectionStart;
+      const textBeforeCursor = editor.value.slice(0, cursorPosition);
+
+      // Detect if the user is typing a tag name (e.g., <td)
+      const match = textBeforeCursor.match(/<([a-z]*)$/i);
+      if (match) {
+        const partialTag = match[1].toLowerCase();
+        const suggestions = htmlTags.filter(tag => tag.startsWith(partialTag));
+
+        if (suggestions.length > 0) {
+          displaySuggestions(suggestions);
+        } else {
+          hideSuggestions();
+        }
+      } else {
+        hideSuggestions();
+      }
+    }
+
+    function displaySuggestions(suggestions) {
+      const suggestionList = document.getElementById('suggestions');
+      suggestionList.innerHTML = '';
+      suggestions.forEach(tag => {
+        const item = document.createElement('div');
+        item.classList.add('suggestion-item');
+        item.textContent = `<${tag}></${tag}>`; // Show full tag suggestion
+        item.onclick = () => insertTag(tag);
+        suggestionList.appendChild(item);
+      });
+      suggestionList.style.display = 'block';
+    }
+
+    function insertTag(tag) {
+      const editor = document.getElementById('editor');
+      const cursorPosition = editor.selectionStart;
+      const textBeforeCursor = editor.value.slice(0, cursorPosition);
+
+      // Insert the full tag at the cursor position
+      const newText = `${textBeforeCursor}<${tag}></${tag}>` + editor.value.slice(cursorPosition);
+      editor.value = newText;
+
+      // Move cursor inside the tag
+      editor.selectionStart = editor.selectionEnd = textBeforeCursor.length + tag.length + 2; // After <tag>
+      hideSuggestions();
+    }
+
+    function hideSuggestions() {
+      const suggestionList = document.getElementById('suggestions');
+      suggestionList.style.display = 'none';
     }
   </script>
 </body>
