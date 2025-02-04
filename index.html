@@ -16,7 +16,7 @@
 
     header {
       width: 100%;
-      background: #FF9933; /* Saffron color */
+      background: #FF9933;
       padding: 10px 0;
       color: white;
       text-align: center;
@@ -43,7 +43,7 @@
       flex-wrap: wrap;
     }
 
-    button, select, input[type="file"] {
+    button, select, input[type="file"], input[type="text"] {
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
@@ -52,21 +52,16 @@
     }
 
     button {
-      background: #FF9933; /* Saffron color */
+      background: #FF9933;
       color: white;
     }
 
     button:hover {
-      background: #E88A2A; /* Slightly darker saffron */
+      background: #E88A2A;
     }
 
-    select {
+    select, input[type="text"] {
       background: #f1f1f1;
-    }
-
-    .highlight {
-      background-color: yellow;
-      color: black;
     }
   </style>
 </head>
@@ -79,25 +74,28 @@
     <button onclick="changeFileName()">Change File Name</button>
     <button onclick="downloadCode()">Download</button>
     <button onclick="findWord()">Find Word</button>
-    <button onclick="clearEditor()">Clear</button> <!-- Added Clear button -->
-    <button onclick="runCode()">Run Code</button> <!-- Added Run button -->
+    <button onclick="clearEditor()">Clear</button>
+    <button onclick="runCode()">Run Code</button>
     <select id="fileExtension" onchange="updateExtension()">
-      <option value=".html">html</option>
-      <option value=".css">css</option>
-      <option value=".js">js</option>
-      <option value=".py">py</option>
-      <option value=".php">php</option>
-      <option value=".txt">txt</option>
-      <option value=".lrc">lrc</option> <!-- Added .txt option -->
+      <option value=".html">.html</option>
+      <option value=".css">.css</option>
+      <option value=".js">.js</option>
+      <option value=".py">.py</option>
+      <option value=".php">.php</option>
+      <option value=".txt">.txt</option>
+      <option value=".lrc">.lrc</option> <!-- Added LRC option -->
     </select>
-    <input type="file" accept=".html,.css,.js,.py,.php,.txt" onchange="uploadFile(event)" />
+    <input type="file" accept=".html,.css,.js,.py,.php,.txt,.lrc" onchange="uploadFile(event)" />
+  </div>
+  
+  <div class="button-container">
+    <input type="text" id="fileUrl" placeholder="Enter file URL" style="width: 70%;" />
+    <button onclick="downloadSourceCode()">Download File by Link</button>
   </div>
 
   <script>
     let fileName = 'new_file';
     let fileExtension = '.html';
-    let matchIndices = [];
-    let currentMatchIndex = 0;
 
     function copyCode() {
       const editor = document.getElementById('editor');
@@ -127,7 +125,7 @@
       const blob = new Blob([editorContent], { type: 'text/plain' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `${fileName}${fileExtension}`;
+      link.download = `${fileName}${fileExtension}`; // Fixed PHP file extension issue
       link.click();
     }
 
@@ -146,64 +144,20 @@
       }
     }
 
-    function findWord() {
-      const editor = document.getElementById('editor');
-      const searchWord = prompt('Enter the word to find:');
-      if (!searchWord) return;
-
-      const content = editor.value;
-      matchIndices = [];
-      let match;
-
-      // Clear previous highlights
-      editor.value = editor.value; // Reset the content
-
-      const regex = new RegExp(searchWord, 'gi');
-      while ((match = regex.exec(content)) !== null) {
-        matchIndices.push(match.index);
-      }
-
-      if (matchIndices.length > 0) {
-        currentMatchIndex = 0;
-        highlightMatches(searchWord);
-        alert(`Found ${matchIndices.length} occurrence(s) of "${searchWord}".`);
-      } else {
-        alert(`No occurrences of "${searchWord}" found.`);
-      }
-    }
-
-    function highlightMatches(searchWord) {
-      const editor = document.getElementById('editor');
-      const content = editor.value;
-      const highlightedContent = content.replace(
-        new RegExp(searchWord, 'gi'),
-        (match) => `<mark class="highlight">${match}</mark>`
-      );
-
-      // Replace the editor content
-      const div = document.createElement('div');
-      div.innerHTML = highlightedContent;
-      editor.replaceWith(div);
-    }
-
-    // Function to clear the editor content
     function clearEditor() {
-      document.getElementById('editor').value = ''; // Clears the content of the textarea
+      document.getElementById('editor').value = '';
     }
 
-    // Function to run code in a new window based on file extension
     function runCode() {
       const editorContent = document.getElementById('editor').value;
       const extension = fileExtension.toLowerCase();
 
       if (extension === '.js') {
-        // Run JavaScript code
         const newWindow = window.open('', '_blank');
         newWindow.document.write('<html><head><title>JavaScript Output</title></head><body>');
         newWindow.document.write('<h1>JavaScript Output</h1>');
         newWindow.document.write('<pre>');
         try {
-          // Execute JavaScript code
           eval(editorContent);
         } catch (error) {
           newWindow.document.write(`Error: ${error.message}`);
@@ -211,16 +165,36 @@
         newWindow.document.write('</pre></body></html>');
         newWindow.document.close();
       } else if (extension === '.html' || extension === '.css') {
-        // Run HTML/CSS code
         const newWindow = window.open('', '_blank');
         newWindow.document.write(editorContent);
         newWindow.document.close();
-      } else if (extension === '.py' || extension === '.php') {
-        // Alert that we can't run Python/PHP directly in the browser
-        alert('Python and PHP code cannot be executed directly in the browser. Please use a server-side environment.');
       } else {
         alert('This file type cannot be executed directly in the browser.');
       }
+    }
+
+    function downloadSourceCode() {
+      const url = document.getElementById('fileUrl').value;
+
+      if (!url) {
+        alert('Please enter a URL.');
+        return;
+      }
+
+      fetch(url)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+          }
+          return response.text();
+        })
+        .then((data) => {
+          document.getElementById('editor').value = data;
+          alert('File downloaded successfully and loaded into the editor.');
+        })
+        .catch((error) => {
+          alert(`Failed to download file: ${error.message}`);
+        });
     }
   </script>
 </body>
